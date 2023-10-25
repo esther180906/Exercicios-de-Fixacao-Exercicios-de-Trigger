@@ -1,0 +1,38 @@
+CREATE TRIGGER After_Client_Insert AFTER INSERT ON Clientes
+FOR EACH ROW INSERT INTO Auditoria (mensagem) VALUES ('Novo cliente inserido em ' + NOW());
+
+--1--
+CREATE TRIGGER Cliente_Inserido AFTER INSERT ON Clientes
+FOR EACH ROW INSERT INTO Auditoria (mensagem) VALUES (CONCAT('Novo cliente inserido em ', NOW());
+
+--2--
+CREATE TRIGGER Antes_Excluir_Cliente BEFORE DELETE ON Clientes
+FOR EACH ROW INSERT INTO Auditoria (mensagem) VALUES (CONCAT('Tentativa de exclusão do cliente ', OLD.nome, ' em ', NOW());
+
+--3--
+CREATE TRIGGER Atualizar_Nome_Cliente AFTER UPDATE ON Clientes
+FOR EACH ROW INSERT INTO Auditoria (mensagem) VALUES (CONCAT('Nome do cliente atualizado de ', OLD.nome, ' para ', NEW.nome, ' em ', NOW()));
+
+--4--
+CREATE TRIGGER Atualizar_Nome_Cliente BEFORE UPDATE ON Clientes
+FOR EACH ROW
+    IF NEW.nome IS NULL OR NEW.nome = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'A atualização do nome para um valor vazio ou NULL não é permitida.';
+    ELSE
+        INSERT INTO Auditoria (mensagem) VALUES (CONCAT('Nome do cliente atualizado de ', OLD.nome, ' para ', NEW.nome, ' em ', NOW()));
+
+--5--
+CREATE TRIGGER Decrementar_Estoque_Pedido AFTER INSERT ON Pedidos
+FOR EACH ROW
+    UPDATE Produtos
+    SET estoque = estoque - NEW.quantidade
+    WHERE id = NEW.produto_id;
+
+    IF (SELECT estoque FROM Produtos WHERE id = NEW.produto_id) < 5 THEN
+        INSERT INTO Auditoria (mensagem) 
+        VALUES 
+        (CONCAT('Estoque baixo para o produto ', 
+        (SELECT nome FROM Produtos WHERE id = NEW.produto_id), '. Estoque atual: ', 
+        (SELECT estoque FROM Produtos WHERE id = NEW.produto_id), ' em ', NOW());
+
